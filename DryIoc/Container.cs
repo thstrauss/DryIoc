@@ -607,18 +607,18 @@ namespace DryIoc
 
             var container = (IContainer)this;
             IEnumerable<ServiceRegistrationInfo> items = container.GetAllServiceFactories(requiredItemType)
-                .Select(f => new ServiceRegistrationInfo(f.Value, requiredItemType, f.Key))
-                .ToArray();
+                .Where(f => f.Value != null)
+                .Select(f => new ServiceRegistrationInfo(f.Value, requiredItemType, f.Key));
 
             IEnumerable<ServiceRegistrationInfo> openGenericItems = null;
             if (requiredItemType.IsClosedGeneric())
             {
                 var requiredItemOpenGenericType = requiredItemType.GetGenericDefinitionOrNull();
                 openGenericItems = container.GetAllServiceFactories(requiredItemOpenGenericType)
+                    .Where(f => f.Value != null)
                     .Select(f => new ServiceRegistrationInfo(f.Value, requiredServiceType,
                         // note: Special service key with info about open-generic service type
-                        new[] { requiredItemOpenGenericType, f.Key }))
-                    .ToArray();
+                        new[] { requiredItemOpenGenericType, f.Key }));
             }
 
             // Append registered generic types with compatible variance,
@@ -660,7 +660,7 @@ namespace DryIoc
             // Exclude composite parent service from items, skip decorators
             var parent = preResolveParent;
             if (parent.FactoryType != FactoryType.Service)
-                parent = parent.Enumerate().FirstOrDefault(p => p.FactoryType == FactoryType.Service) 
+                parent = parent.Enumerate().FirstOrDefault(p => p.FactoryType == FactoryType.Service)
                     ?? RequestInfo.Empty;
 
             if (!parent.IsEmpty && parent.GetActualServiceType() == requiredItemType)
@@ -670,7 +670,7 @@ namespace DryIoc
                 if (openGenericItems != null)
                     openGenericItems = openGenericItems
                         .Where(it => !it.Factory.FactoryGenerator.GeneratedFactories.Enumerate()
-                            .Any(f => f.Value.FactoryID == parent.FactoryID 
+                            .Any(f => f.Value.FactoryID == parent.FactoryID
                                 && f.Key.Key == parent.ServiceType && f.Key.Value == parent.ServiceKey));
 
                 if (variantGenericItems != null)
@@ -684,7 +684,6 @@ namespace DryIoc
             if (variantGenericItems != null)
                 allItems = allItems.Concat(variantGenericItems);
 
-            // Resolve in resgitration order
             foreach (var item in allItems.OrderBy(it => it.FactoryRegistrationOrder))
             {
                 var service = container.Resolve(serviceType, item.OptionalServiceKey,
@@ -692,7 +691,7 @@ namespace DryIoc
                 if (service != null) // skip unresolved items
                     yield return service;
             }
-            
+
             // todo: Don't like it here
             var fallbackContainers = container.Rules.FallbackContainers;
             if (!fallbackContainers.IsNullOrEmpty())
