@@ -9646,15 +9646,14 @@ namespace DryIoc
                     return item;
 
                 item = createValue();
-                TrackDisposable(item);
+
+                // Swap is required because if _items changed inside createValue, then we need to retry
+                var items = _items;
+                if (Interlocked.CompareExchange(ref _items, items.AddOrUpdate(id, item), items) != items)
+                    Ref.Swap(ref _items, it => it.AddOrUpdate(id, item));
             }
 
-            var items = _items;
-            var newItems = items.AddOrUpdate(id, item);
-
-            // if _items were not changed so far then use them, otherwise (if changed) do ref swap;
-            if (Interlocked.CompareExchange(ref _items, newItems, items) != items)
-                Ref.Swap(ref _items, _ => _.AddOrUpdate(id, item));
+            TrackDisposable(item);
             return item;
         }
 
@@ -9662,8 +9661,14 @@ namespace DryIoc
         /// <param name="id">To set value at.</param> <param name="item">Value to set.</param>
         public void SetOrAdd(int id, object item)
         {
-            Throw.If(_disposed == 1, Error.ScopeIsDisposed);
-            Ref.Swap(ref _items, items => items.AddOrUpdate(id, item));
+            if (_disposed == 1)
+                Throw.It(Error.ScopeIsDisposed);
+
+            // try to atomically replaced items with the one set item, if attempt failed then lock and replace
+            var items = _items;
+            if (Interlocked.CompareExchange(ref _items, items.AddOrUpdate(id, item), items) != items)
+                lock (_locker)
+                    _items = _items.AddOrUpdate(id, item);
         }
 
         /// <summary>Disposes all stored <see cref="IDisposable"/> objects and nullifies object storage.</summary>
