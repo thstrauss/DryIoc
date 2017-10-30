@@ -8574,6 +8574,7 @@ namespace DryIoc
         public static bool IsInjectable(this PropertyInfo property, bool withNonPublic = false, bool withPrimitive = false)
         {
             return property.CanWrite
+                && !property.IsExplicitlyImplemented()
                 && !property.IsStatic()
                 && !property.IsIndexer() // first checks that property is assignable in general and not an indexer
                 && (withNonPublic || property.GetSetMethodOrNull() != null)
@@ -12101,17 +12102,36 @@ namespace DryIoc
         /// <summary>Returns type assembly.</summary> <param name="type">Input type</param> <returns>Type assembly.</returns>
         public static Assembly GetAssembly(this Type type) { return type.GetTypeInfo().Assembly; }
 
+        /// <summary>Is <c>true</c> for interface declared property explicitly implemented, e.g. <c>IInterface.Prop</c></summary>
+        public static bool IsExplicitlyImplemented(this PropertyInfo property)
+        {
+            return property.Name.Contains(".");
+        }
+
         /// <summary>Returns true if member is static, otherwise returns false.</summary>
         /// <param name="member">Member to check.</param> <returns>True if static.</returns>
         public static bool IsStatic(this MemberInfo member)
         {
-            var isStatic =
-                member is MethodInfo ? ((MethodInfo)member).IsStatic :
-                member is PropertyInfo
-                    ? (((PropertyInfo)member).GetGetMethodOrNull(includeNonPublic: true)
-                    ?? ((PropertyInfo)member).GetSetMethodOrNull(includeNonPublic: true)).IsStatic :
-                ((FieldInfo)member).IsStatic;
-            return isStatic;
+            var method = member as MethodInfo;
+            if (method != null)
+                return method.IsStatic;
+
+            var field = member as FieldInfo;
+            if (field != null)
+                return field.IsStatic;
+
+            var prop = member as PropertyInfo;
+            if (prop == null || prop.IsExplicitlyImplemented())
+                return false;
+
+            var propAccessor = 
+                prop.GetGetMethodOrNull(includeNonPublic: true) ??
+                prop.GetSetMethodOrNull(includeNonPublic: true);
+
+            if (propAccessor == null)
+                return false; // how come?
+
+            return propAccessor.IsStatic;
         }
 
         /// <summary>Return either <see cref="PropertyInfo.PropertyType"/>, or <see cref="FieldInfo.FieldType"/>, <see cref="MethodInfo.ReturnType"/>.
