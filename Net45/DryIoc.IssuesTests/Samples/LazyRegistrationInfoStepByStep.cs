@@ -272,7 +272,6 @@ namespace DryIoc.IssuesTests.Samples
             var assembly = typeof(LazyRegistrationInfoStepByStep).Assembly;
             var registrations = AttributedModel.Scan(new[] { assembly });
             var lazyRegistrations = registrations.MakeLazyAndEnsureUniqueServiceKeys();
-            var assemblyLoaded = false;
 
             // use shared service exports to compose multiple providers
             var serviceExports = new Dictionary<string, IList<KeyValuePair<object, ExportedRegistrationInfo>>>();
@@ -285,7 +284,6 @@ namespace DryIoc.IssuesTests.Samples
                     otherServiceExports: serviceExports,
                     typeProvider: t =>
                     {
-                        assemblyLoaded = true;
                         return assembly.GetType(t);
                     }))
                 .ToArray();
@@ -295,12 +293,11 @@ namespace DryIoc.IssuesTests.Samples
             var container = new Container().WithMef()
                 .With(rules => rules.WithDynamicRegistrations(dynamicRegistrations));
 
-            // make sure that CommandImporter itself is available without loading the lazy assembly
+            // make sure that CircularDependencyRoot itself is available without loading the lazy assembly
             container.RegisterExports(typeof(CircularDependencyRoot));
             Assert.Throws<ContainerException>(() =>
             {
-                var root = container.Resolve<CircularDependencyRoot>();
-                Assert.IsTrue(assemblyLoaded);
+                container.Resolve<CircularDependencyRoot>();
             });
         }
 
