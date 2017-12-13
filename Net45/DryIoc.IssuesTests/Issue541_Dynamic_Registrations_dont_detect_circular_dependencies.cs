@@ -9,7 +9,7 @@ namespace DryIoc.IssuesTests
     [TestFixture]
     public class Issue541_Dynamic_Registrations_dont_detect_circular_dependencies
     {
-        [Test, Ignore("Fails with StackOverflowException at line 50")]
+        [Test]
         public void Lazy_import_should_detect_circular_dependencies()
         {
             // ordinary registration

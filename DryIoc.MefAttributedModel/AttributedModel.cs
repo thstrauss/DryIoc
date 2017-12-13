@@ -554,11 +554,23 @@ namespace DryIoc.MefAttributedModel
                 }
             }
 
+            var factoryCache = ImTreeMap<ExportedRegistrationInfo, ReflectionFactory>.Empty;
+            var getOrCreateFactory = new Func<ExportedRegistrationInfo, ReflectionFactory>(info =>
+            {
+                var result = factoryCache.GetValueOrDefault(info);
+                if (result != null)
+                    return result;
+
+                result = info.CreateFactory(typeProvider);
+                factoryCache = factoryCache.AddOrUpdate(info, result);
+                return result;
+            });
+
             return (serviceType, serviceKey) =>
             {
                 IList<KeyValuePair<object, ExportedRegistrationInfo>> regs;
                 return otherServiceExports.TryGetValue(serviceType.FullName, out regs)
-                    ? regs.Map(r => new DynamicRegistration(r.Value.CreateFactory(typeProvider), ifAlreadyRegistered, r.Key))
+                    ? regs.Map(r => new DynamicRegistration(getOrCreateFactory(r.Value), ifAlreadyRegistered, r.Key))
                     : null;
             };
         }
