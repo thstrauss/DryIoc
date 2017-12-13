@@ -405,6 +405,102 @@ namespace DryIoc.IssuesTests.Samples
                 throw new NotImplementedException();
             }
         }
+
+        [Test]
+        public void Lazy_import_should_respect_shared_creation_policy()
+        {
+            // check that MEF respects the shared policy
+            var mefCatalog = new System.ComponentModel.Composition.Hosting.AssemblyCatalog(typeof(DerivedService).Assembly);
+            var mefContainer = new System.ComponentModel.Composition.Hosting.CompositionContainer(mefCatalog);
+
+            var exp1 = mefContainer.GetExport<IBaseService>().Value;
+            var exp2 = mefContainer.GetExport<IDerivedService>().Value;
+            Assert.AreEqual(exp1.InstanceID, exp2.InstanceID);
+
+            // ordinary registration
+            // ==================================================================
+            var nonLazyContainer = new Container().WithMef().With(r => r.WithDefaultReuse(Reuse.Transient));
+            nonLazyContainer.RegisterExports(new[] { typeof(LazyRegistrationInfoStepByStep).Assembly });
+
+            exp1 = nonLazyContainer.Resolve<IBaseService>();
+            using (var scope = nonLazyContainer.OpenScope())
+            {
+                exp2 = scope.Resolve<IDerivedService>();
+                Assert.AreEqual(exp1.InstanceID, exp2.InstanceID);
+            }
+
+            var use1 = new UseBaseService();
+            nonLazyContainer.InjectPropertiesAndFields(use1);
+            Assert.AreEqual(exp1.InstanceID, use1.Service.InstanceID);
+
+            var use2 = new UseDerivedService();
+            nonLazyContainer.InjectPropertiesAndFields(use2);
+            Assert.AreEqual(exp1.InstanceID, use2.Service.InstanceID);
+
+            // register dynamically
+            var assembly = typeof(LazyRegistrationInfoStepByStep).Assembly;
+            var registrations = AttributedModel.Scan(new[] { assembly });
+            var lazyRegistrations = registrations.MakeLazyAndEnsureUniqueServiceKeys();
+
+            // use shared service exports to compose multiple providers
+            var serviceExports = new Dictionary<string, IList<KeyValuePair<object, ExportedRegistrationInfo>>>();
+
+            // create a separate DynamicRegistrationProvider for each lazy registration
+            // to simulate that each ICommand is located in a different assembly
+            var dynamicRegistrations = lazyRegistrations
+                .Select(r => new[] { r }
+                    .GetLazyTypeRegistrationProvider(
+                        otherServiceExports: serviceExports,
+                        typeProvider: t => assembly.GetType(t)))
+                .ToArray();
+
+            // Test that dynamic resolution also respects the shared policy
+            //==================================================================
+            var container = new Container().WithMef()
+                .With(rules => rules.WithDynamicRegistrations(dynamicRegistrations));
+
+            exp1 = container.Resolve<IBaseService>();
+            using (var scope = container.OpenScope())
+            {
+                exp2 = scope.Resolve<IDerivedService>();
+                Assert.AreEqual(exp1.InstanceID, exp2.InstanceID);
+            }
+
+            // make sure that UseBaseService and UseDerivedService classes are available without loading the lazy assembly
+            container.RegisterExports(typeof(UseBaseService), typeof(UseDerivedService));
+
+            use1 = new UseBaseService();
+            container.InjectPropertiesAndFields(use1);
+            Assert.AreEqual(exp1.InstanceID, use1.Service.InstanceID);
+
+            use2 = new UseDerivedService();
+            container.InjectPropertiesAndFields(use2);
+            Assert.AreEqual(exp1.InstanceID, use2.Service.InstanceID);
+        }
+
+        public interface IBaseService { string InstanceID { get; } }
+
+        public interface IDerivedService : IBaseService { }
+
+        [Export(typeof(IBaseService))]
+        [Export(typeof(IDerivedService))]
+        [PartCreationPolicy(CreationPolicy.Shared)]
+        public class DerivedService : IDerivedService, IBaseService
+        {
+            public string InstanceID { get; } = Guid.NewGuid().ToString();
+        }
+
+        public class UseBaseService
+        {
+            [Import]
+            public IBaseService Service { get; set; }
+        }
+
+        public class UseDerivedService
+        {
+            [Import]
+            public IDerivedService Service { get; set; }
+        }
     }
 
     public interface IThing { }
