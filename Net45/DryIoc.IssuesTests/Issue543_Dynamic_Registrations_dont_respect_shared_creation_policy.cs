@@ -78,7 +78,7 @@ namespace DryIoc.IssuesTests
                 .With(r => r.WithDefaultReuse(Reuse.Transient).WithDynamicRegistrations(dynamicRegistrations));
         }
 
-        [Test, Ignore("Fails at line 89")]
+        [Test]
         public void DryIoc_lazy_import_should_respect_shared_creation_policy_via_Resolve()
         {
             var container = CreateContainerWithDynamicRegistrations();
@@ -90,7 +90,7 @@ namespace DryIoc.IssuesTests
             }
         }
 
-        [Test, Ignore("Fails at line #104")]
+        [Test]
         public void DryIoc_lazy_import_should_respect_shared_creation_policy_via_InjectPropertiesAndFields()
         {
             // make sure that UseBaseService and UseDerivedService classes are available without loading the lazy assembly
