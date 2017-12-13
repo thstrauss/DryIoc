@@ -179,6 +179,8 @@
     <Compile Include="Issue522_IncorrectApplicationOfSingletonReuse.cs" />
     <Compile Include="Issue527_ErrorResolvemManyAfterUregister.cs" />
     <Compile Include="Issue533_Exporting_WPF_UserControl_causes_NullReferenceException.cs" />
+    <Compile Include="Issue541_Dynamic_Registrations_dont_detect_circular_dependencies.cs" />
+    <Compile Include="Issue543_Dynamic_Registrations_dont_respect_shared_creation_policy.cs" />
     <Compile Include="Issue85_SkipResolutionForPropertiesAndFieldsAlreadySetInConstructor.cs" />
     <Compile Include="DryIOCSingletonFailureTest.cs" />
     <Compile Include="Issue80_SupportWrappersForAllInterfacesImplementedByArray.cs" />
