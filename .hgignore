@@ -90,6 +90,9 @@ _TeamCity*
 # DotCover is a Code Coverage Tool
 *.dotCover
 
+# axoCover is a Code Coverage Tool
+.axoCover
+
 # OpenCover
 OpenCover/*
 
