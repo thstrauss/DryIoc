@@ -546,11 +546,11 @@ namespace DryIoc.MefAttributedModel
                 for (var i = 0; i < exports.Length; i++)
                 {
                     var e = exports[i];
-                    IList<KeyValuePair<object, ExportedRegistrationInfo>> expRegs;
-                    if (!otherServiceExports.TryGetValue(e.ServiceTypeFullName, out expRegs))
+                    IList<KeyValuePair<object, ExportedRegistrationInfo>> exportRegs;
+                    if (!otherServiceExports.TryGetValue(e.ServiceTypeFullName, out exportRegs))
                         otherServiceExports[e.ServiceTypeFullName] =
-                            expRegs = new List<KeyValuePair<object, ExportedRegistrationInfo>>();
-                    expRegs.Add(new KeyValuePair<object, ExportedRegistrationInfo>(e.ServiceKey, reg));
+                            exportRegs = new List<KeyValuePair<object, ExportedRegistrationInfo>>();
+                    exportRegs.Add(new KeyValuePair<object, ExportedRegistrationInfo>(e.ServiceKey, reg));
                 }
             }
 
@@ -568,9 +568,9 @@ namespace DryIoc.MefAttributedModel
 
             return (serviceType, serviceKey) =>
             {
-                IList<KeyValuePair<object, ExportedRegistrationInfo>> regs;
-                return otherServiceExports.TryGetValue(serviceType.FullName, out regs)
-                    ? regs.Map(r => new DynamicRegistration(getOrCreateFactory(r.Value), ifAlreadyRegistered, r.Key))
+                IList<KeyValuePair<object, ExportedRegistrationInfo>> exportRegs;
+                return otherServiceExports.TryGetValue(serviceType.FullName.ThrowIfNull(), out exportRegs)
+                    ? exportRegs.Map(r => new DynamicRegistration(getOrCreateFactory(r.Value), ifAlreadyRegistered, r.Key))
                     : null;
             };
         }
@@ -852,10 +852,10 @@ namespace DryIoc.MefAttributedModel
                 }
                 else if (attribute is ReuseAttribute)
                 {
-                    var resueAttr = (ReuseAttribute)attribute;
-                    info.Reuse = resueAttr.CustomReuseType == null
-                        ? new ReuseInfo { ReuseType = resueAttr.ReuseType, ScopeName = resueAttr.ScopeName }
-                        : new ReuseInfo { CustomReuseType = resueAttr.CustomReuseType, ScopeName = resueAttr.ScopeName };
+                    var reuseAttr = (ReuseAttribute)attribute;
+                    info.Reuse = reuseAttr.CustomReuseType == null
+                        ? new ReuseInfo { ReuseType = reuseAttr.ReuseType, ScopeName = reuseAttr.ScopeName }
+                        : new ReuseInfo { CustomReuseType = reuseAttr.CustomReuseType, ScopeName = reuseAttr.ScopeName };
                 }
                 else if (attribute is OpenResolutionScopeAttribute)
                 {
@@ -1644,7 +1644,7 @@ namespace DryIoc.MefAttributedModel
                 else
                 {
                     // index custom metadata attributes with their type name
-                    metaKey = metaAttr.GetType().FullName;
+                    metaKey = metaAttr.GetType().FullName.ThrowIfNull();
                     addProperties = true;
                 }
 
