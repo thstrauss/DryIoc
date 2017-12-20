@@ -7121,7 +7121,9 @@ namespace DryIoc
             if (reuse == null)
                 reuse = GetDefaultReuse(factory);
 
-            var flags = _flags;
+            // remove non-inherited factory flag,
+            // e.g. when factory is resolved second time with decorator we need to nullify previous service factory flags
+            var flags = _flags & ~RequestFlags.TracksTransientDisposable;
 
             if (!skipCaptiveDependencyCheck && reuse.Lifespan != 0 &&
                 Rules.ThrowIfDependencyHasShorterReuseLifespan)

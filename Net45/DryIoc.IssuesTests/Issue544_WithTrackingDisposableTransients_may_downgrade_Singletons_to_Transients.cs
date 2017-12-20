@@ -46,6 +46,8 @@ namespace DryIoc.IssuesTests
             var f1 = container.Resolve<IE>();
             var f2 = container.Resolve<IE>();
 
+            Assert.IsInstanceOf<F>(f1);
+
             // BUG: when 'adapter' is active then the net effect is: NOT SAME
             // it seems Decorator-Singleton was downgraded to Transient !!
             Assert.AreSame(f1, f2);
