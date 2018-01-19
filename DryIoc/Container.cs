@@ -4412,6 +4412,14 @@ namespace DryIoc
         /// <returns>New factory method wrapper.</returns>
         public static FactoryMethod Of(MemberInfo ctorOrMethodOrMember, ServiceInfo factoryInfo = null)
         {
+            ctorOrMethodOrMember.ThrowIfNull(Error.PassedCtorOrMemberIsNull);
+            if (!(ctorOrMethodOrMember is ConstructorInfo) && !ctorOrMethodOrMember.IsStatic())
+            {
+                if (factoryInfo == null)
+                    Throw.It(Error.PassedMemberIsNotStaticButInstanceFactoryIsNull, ctorOrMethodOrMember);
+            }
+            else if (factoryInfo != null)
+                Throw.It(Error.PassedMemberIsStaticButInstanceFactoryIsNotNull, ctorOrMethodOrMember, factoryInfo);
             return new FactoryMethod(ctorOrMethodOrMember, factoryInfo);
         }
 
@@ -4709,8 +4717,8 @@ namespace DryIoc
         public static Made Of(Func<Type, ConstructorInfo> getConstructor, ParameterSelector parameters = null,
             PropertiesAndFieldsSelector propertiesAndFields = null)
         {
-            return Of(r => DryIoc.FactoryMethod.Of(getConstructor(r.ImplementationType)
-                .ThrowIfNull(Error.GotNullConstructorFromFactoryMethod, r)),
+            return Of(r => DryIoc.FactoryMethod.Of(
+                getConstructor(r.ImplementationType).ThrowIfNull(Error.GotNullConstructorFromFactoryMethod, r)),
                 parameters, propertiesAndFields);
         }
 
@@ -8796,8 +8804,10 @@ namespace DryIoc
                     Throw.It(Error.RegisteringNotAGenericTypedefImplType,
                         implType, implType.GetGenericDefinitionOrNull());
 
-                else if (implType != serviceType && serviceType != typeof(object) &&
-                    implType.GetImplementedTypes().IndexOf(t => t == serviceType) == -1)
+                else if (implType != serviceType && serviceType != typeof(object)
+                      && implType.GetImplementedTypes().IndexOf(t =>
+                      t == serviceType || t.GetGenericDefinitionOrNull() == serviceType) == -1)
+
                     Throw.It(Error.RegisteringImplementationNotAssignableToServiceType, implType, serviceType);
             }
             else if (implType != serviceType)
@@ -9097,18 +9107,6 @@ namespace DryIoc
             }
 
             var factoryMethod = factoryMethodSelector(request);
-            if (factoryMethod != null && !(factoryMethod.ConstructorOrMethodOrMember is ConstructorInfo))
-            {
-                var member = factoryMethod.ConstructorOrMethodOrMember;
-                var isStaticMember = member.IsStatic();
-
-                Throw.If(isStaticMember && factoryMethod.FactoryServiceInfo != null,
-                    Error.FactoryObjProvidedButMethodIsStatic, factoryMethod.FactoryServiceInfo, factoryMethod, request);
-
-                Throw.If(!isStaticMember && factoryMethod.FactoryServiceInfo == null,
-                    Error.FactoryObjIsNullInFactoryMethod, factoryMethod, request);
-            }
-
             return factoryMethod.ThrowIfNull(Error.UnableToGetConstructorFromSelector, implType, request);
         }
 
@@ -11396,10 +11394,6 @@ namespace DryIoc
                 "Reused service wrapped in WeakReference is Garbage Collected and no longer available."),
             ServiceIsNotAssignableFromFactoryMethod = Of(
                 "Service of {0} is not assignable from factory method {1} when resolving: {2}."),
-            FactoryObjIsNullInFactoryMethod = Of(
-                "Unable to use null factory object with *instance* factory method {0} when resolving: {1}."),
-            FactoryObjProvidedButMethodIsStatic = Of(
-                "Factory instance provided {0} But factory method is static {1} when resolving: {2}."),
             GotNullConstructorFromFactoryMethod = Of(
                 "Got null constructor when resolving {0}"),
             UnableToRegisterDuplicateDefault = Of(
@@ -11486,7 +11480,13 @@ namespace DryIoc
                 "Please Register the implementation with the ifAlreadyRegistered.Replace parameter to fill the placeholder."),
             UnableToFindSingletonInstance = Of(
                 "Expecting the instance to be stored in singleton scope, but unable to find anything here." + Environment.NewLine + 
-                "Likely, you've called UseInstance from the scoped container, but resolving from another container or injecting into a singleton.");
+                "Likely, you've called UseInstance from the scoped container, but resolving from another container or injecting into a singleton."),
+            PassedCtorOrMemberIsNull = Of(
+                "The costructor of member info passed to `Made.Of` or `FactoryMethod.Of` is null"),
+            PassedMemberIsNotStaticButInstanceFactoryIsNull = Of(
+                "The member info {0} passed to `Made.Of` or `FactoryMethod.Of` is NOT static, but instance factory is not provided or null"),
+            PassedMemberIsStaticButInstanceFactoryIsNotNull = Of(
+                "You are passing constructor or STATIC member info {0} to `Made.Of` or `FactoryMethod.Of`, but then why are you passing an INSTANCE factory: {1}");
 
 #pragma warning restore 1591 // "Missing XML-comment"
 

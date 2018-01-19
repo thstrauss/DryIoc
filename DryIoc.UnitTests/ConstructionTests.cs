@@ -156,12 +156,11 @@ namespace DryIoc.UnitTests
         public void Should_throw_for_instance_method_without_factory()
         {
             var container = new Container();
-            container.Register<IService>(made: Made.Of(typeof(ServiceFactory).GetMethodOrNull("Create")));
 
-            var ex = Assert.Throws<ContainerException>(() => 
-                container.Resolve<IService>());
+            var ex = Assert.Throws<ContainerException>(() =>
+                container.Register<IService>(made: Made.Of(typeof(ServiceFactory).GetMethodOrNull("Create"))));
 
-            Assert.AreEqual(Error.FactoryObjIsNullInFactoryMethod, ex.Error);
+            Assert.AreEqual(Error.PassedMemberIsNotStaticButInstanceFactoryIsNull, ex.Error);
         }
 
         [Test]

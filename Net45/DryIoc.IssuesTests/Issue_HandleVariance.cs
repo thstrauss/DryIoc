@@ -6,7 +6,7 @@ namespace DryIoc.IssuesTests
     [TestFixture]
     public class Issue_HandleVariance
     {
-        [Test, Explicit]
+        [Test, Ignore("todo: fix later")]
         public void CommandHandlers_CanBeResolved_From_IoC()
         {
             var container = new Container();
@@ -23,5 +23,19 @@ namespace DryIoc.IssuesTests
         public class Bird : BirdBase<string> { }
         public class BirdImpl : IBird<Bird> { }
         public class BirdBaseImpl<T> : IBird<BirdBase<T>> { }
+
+        [Test]
+        public void Should_discover_variant_interface()
+        {
+            var c = new Container();
+
+            c.RegisterMany(new [] { typeof(FakeRepo).Assembly },
+                t => t.GetGenericDefinitionOrNull() == typeof(IQuery<,>));
+
+            c.Resolve<IQuery<string, object>>();
+        }
+
+        public interface IQuery<in T, out R> { }
+        public class FakeRepo : IQuery<string, object> { }
     }
 }
