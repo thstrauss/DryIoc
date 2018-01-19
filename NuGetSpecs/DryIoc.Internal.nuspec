@@ -12,6 +12,9 @@
     <description>DryIoc is fast, small, full-featured IoC Container for .NET</description>
     <tags>IoC Container Inversion-of-Control DI Dependency-Injection DRY Service-Provider Factory</tags>
     <releaseNotes>
+      v2.12.7:
+      - fixed: #554 Allow Register an open-generic service type with closed implementation to enable variance
+      - fixed: #553 Made.Of(null) causes crash in error handler
       v2.12.6:
       - fixed: #544: WithTrackingDisposableTransients may downgrade Singletons to Transients
       v2.12.5:
