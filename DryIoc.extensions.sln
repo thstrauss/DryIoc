@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.8
+VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DryIoc", "Net45\DryIoc\DryIoc.csproj", "{B6C2FC35-7586-417B-AD35-32AED63ADFA9}"
 EndProject
@@ -66,6 +66,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DryIocZero.WebApi", "Extensions\DryIocZero.WebApi\DryIocZero.WebApi.csproj", "{E5D3A0BD-21E8-4C2B-A37D-4B8082C1C3F8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DryIoc.WebApi.Owin.Sample", "Extensions\DryIoc.WebApi.Owin.Sample\DryIoc.WebApi.Owin.Sample.csproj", "{FFBA94E2-8293-4F38-B687-72E4A64D64CD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildScripts", "BuildScripts", "{E68758AB-D01F-4C2C-B885-9837CAC51FDE}"
+	ProjectSection(SolutionItems) = preProject
+		BuildScripts\NuGetPublish.bat = BuildScripts\NuGetPublish.bat
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
