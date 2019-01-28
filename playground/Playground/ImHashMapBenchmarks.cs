@@ -222,6 +222,25 @@ Frequency=2156249 Hz, Resolution=463.7683 ns, Timer=TSC
  AddOrUpdate_v1 |  1000 | 308,355.6 ns | 2,046.461 ns | 1,914.261 ns |  1.06 |    120.6055 |      3.4180 |           - |            569760 B |
  AddOrUpdate_v3 |  1000 | 375,880.3 ns | 1,710.716 ns | 1,600.205 ns |  1.29 |    118.6523 |      0.4883 |           - |            560440 B |
 
+## Degrade while splitting Conflicts from _data and introducing ConflictsNode, not so memory gain either
+
+         Method | Count |         Mean |        Error |       StdDev | Ratio | Gen 0/1k Op | Gen 1/1k Op | Gen 2/1k Op | Allocated Memory/Op |
+--------------- |------ |-------------:|-------------:|-------------:|------:|------------:|------------:|------------:|--------------------:|
+ AddOrUpdate_v2 |     5 |     408.2 ns |     1.602 ns |     1.420 ns |  0.78 |      0.2170 |           - |           - |                1 KB |
+ AddOrUpdate_v1 |     5 |     480.7 ns |     2.277 ns |     2.130 ns |  0.92 |      0.2737 |           - |           - |             1.27 KB |
+    AddOrUpdate |     5 |     520.9 ns |     4.852 ns |     4.301 ns |  1.00 |      0.2337 |           - |           - |             1.08 KB |
+                |       |              |              |              |       |             |             |             |                     |
+ AddOrUpdate_v1 |    40 |   4,712.5 ns |    22.846 ns |    21.370 ns |  0.85 |      2.9678 |           - |           - |            13.69 KB |
+ AddOrUpdate_v2 |    40 |   4,962.0 ns |    12.326 ns |    10.927 ns |  0.89 |      2.8458 |           - |           - |            13.14 KB |
+    AddOrUpdate |    40 |   5,545.0 ns |    17.194 ns |    15.242 ns |  1.00 |      2.6093 |           - |           - |            12.05 KB |
+                |       |              |              |              |       |             |             |             |                     |
+ AddOrUpdate_v1 |   200 |  34,642.4 ns |    84.670 ns |    79.200 ns |  0.88 |     18.7378 |      0.0610 |           - |            86.53 KB |
+ AddOrUpdate_v2 |   200 |  36,534.0 ns |   142.237 ns |   133.048 ns |  0.93 |     19.2261 |           - |           - |            88.88 KB |
+    AddOrUpdate |   200 |  39,404.8 ns |   146.758 ns |   137.278 ns |  1.00 |     16.7847 |      0.0610 |           - |            77.51 KB |
+                |       |              |              |              |       |             |             |             |                     |
+ AddOrUpdate_v2 |  1000 | 295,012.0 ns |   853.909 ns |   756.968 ns |  0.93 |    130.8594 |      0.9766 |           - |           604.55 KB |
+ AddOrUpdate_v1 |  1000 | 300,848.4 ns | 1,235.851 ns | 1,156.015 ns |  0.94 |    120.6055 |      3.4180 |           - |           556.41 KB |
+    AddOrUpdate |  1000 | 318,699.3 ns | 1,292.688 ns | 1,209.181 ns |  1.00 |    109.8633 |      0.4883 |           - |           507.57 KB |
 */
 
             [Params(5, 40, 200, 1000)]
