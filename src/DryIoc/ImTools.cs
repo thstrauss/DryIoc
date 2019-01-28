@@ -1264,9 +1264,17 @@ namespace ImTools
         {
             isUpdated = false;
             oldValue = default(V);
-            return Height == 0
-                ? new ImHashMap<K, V>(new Data(key.GetHashCode(), key, value))
-                : AddOrUpdate(key.GetHashCode(), key, value, ref isUpdated, ref oldValue, update);
+
+            var hash = key.GetHashCode();
+            if (Height == 0)
+                return new ImHashMap<K, V>(new Data(hash, key, value));
+
+            if (hash == Hash)
+                return ReferenceEquals(Key, key) || Key.Equals(key)
+                    ? UpdatedOrOld(hash, key, value, ref isUpdated, ref oldValue, update)
+                    : UpdateValueAndResolveConflicts(key, value, ref isUpdated, ref oldValue, update, false);
+
+            return AddOrUpdate(hash, key, value, ref isUpdated, ref oldValue, update);
         }
 
         /// <summary>Looks for <paramref name="key"/> and replaces its value with new <paramref name="value"/>, or 
@@ -1424,11 +1432,6 @@ namespace ImTools
         private ImHashMap<K, V> AddOrUpdate(
             int hash, K key, V value, ref bool isUpdated, ref V oldValue, Update<K, V> update = null)
         {
-            if (hash == Hash)
-                return ReferenceEquals(Key, key) || Key.Equals(key)
-                    ? UpdatedOrOld(hash, key, value, ref isUpdated, ref oldValue, update)
-                    : UpdateValueAndResolveConflicts(key, value, ref isUpdated, ref oldValue, update, false);
-
             if (hash < Hash)
             {
                 if (Height == 1)
@@ -1439,37 +1442,52 @@ namespace ImTools
                     return NewNode(_data, Conflicts, 
                         new ImHashMap<K, V>(new Data(hash, key, value)), Right, Height);
 
-                if (Right.Height == 0)
+                if (hash == Left.Hash)
                 {
-                    // the left can be only a single leaf, cause empty case we handled above, and the tree is balanced
-                    if (hash == Left.Hash)
-                    {
-                        var updatedLeft = ReferenceEquals(Left.Key, key) || Left.Key.Equals(key)
-                            ? Left.UpdatedOrOld(hash, key, value, ref isUpdated, ref oldValue, update)
-                            : Left.UpdateValueAndResolveConflicts(key, value, ref isUpdated, ref oldValue, update, false);
-                        return updatedLeft == Left ? this : NewNode(_data, Conflicts, updatedLeft, Empty, 2);
-                    }
-
-                    // single rotation:
-                    //      5     =>     2
-                    //   2            1     5
-                    // 1                     
-                    if (hash < Left.Hash)
-                        return NewNode(Left._data, Left.Conflicts,
-                            new ImHashMap<K, V>(new Data(hash, key, value)), 
-                            NewNode(_data, Conflicts), 2);
-
-                    // double rotation:
-                    //      5     =>     5     =>     4
-                    //   2            4            2     5
-                    //     4        2                     
-                    return new ImHashMap<K, V>(new Data(hash, key, value),
-                        NewNode(Left._data, Left.Conflicts), NewNode(_data, Conflicts), 2);
+                    var updatedLeft = ReferenceEquals(Left.Key, key) || Left.Key.Equals(key)
+                        ? Left.UpdatedOrOld(hash, key, value, ref isUpdated, ref oldValue, update)
+                        : Left.UpdateValueAndResolveConflicts(key, value, ref isUpdated, ref oldValue, update, false);
+                    return updatedLeft == Left ? this : NewNode(_data, Conflicts, updatedLeft, Right);
                 }
 
-                var left = Left.AddOrUpdate(hash, key, value, ref isUpdated, ref oldValue, update);
-                if (left == Left)
-                    return this;
+                var left = Left;
+                if (left.Height == 1)
+                {
+                    if (hash < left.Hash)
+                    {
+                        // single rotation:
+                        //      5     =>     2
+                        //   2            1     5
+                        // 1                     
+                        if (Right.Height == 0)
+                            return NewNode(left._data, left.Conflicts,
+                                new ImHashMap<K, V>(new Data(hash, key, value)),
+                                NewNode(_data, Conflicts), 2);
+
+                        left = NewNode(left._data, left.Conflicts, 
+                            new ImHashMap<K, V>(new Data(hash, key, value)), Empty, 2);
+                    }
+                    else
+                    {
+                        if (Right.Height == 0)
+                            // double rotation:
+                            //      5     =>     5     =>     4
+                            //   2            4            2     5
+                            //     4        2                     
+                            return new ImHashMap<K, V>(new Data(hash, key, value),
+                                NewNode(left._data, left.Conflicts), NewNode(_data, Conflicts), 2);
+
+                        left = NewNode(left._data, left.Conflicts, 
+                            Empty, new ImHashMap<K, V>(new Data(hash, key, value)), 2);
+                    }
+                }
+                else
+                {
+                    var oldLeft = left;
+                    left = left.AddOrUpdate(hash, key, value, ref isUpdated, ref oldValue, update);
+                    if (oldLeft == left)
+                        return this;
+                }
 
                 if (left.Height > Right.Height + 1) // left is longer by 2, rotate left
                 {
@@ -1506,35 +1524,51 @@ namespace ImTools
                     return NewNode(_data, Conflicts,
                         Left, new ImHashMap<K, V>(new Data(hash, key, value)), Height);
 
-                if (Left.Height == 0)
+                if (hash == Right.Hash)
                 {
-                    if (hash == Right.Hash)
-                    {
-                        var updatedRight = ReferenceEquals(Right.Key, key) || Right.Key.Equals(key)
-                            ? Right.UpdatedOrOld(hash, key, value, ref isUpdated, ref oldValue, update)
-                            : Right.UpdateValueAndResolveConflicts(key, value, ref isUpdated, ref oldValue, update, false);
-                        return updatedRight == Right ? this : NewNode(_data, Conflicts, Empty, updatedRight, 2);
-                    }
-
-                    // double rotation:
-                    //    5     =>   5     =>     6
-                    //       8          6      5     8
-                    //      6            8
-                    if (hash < Right.Hash)
-                        return new ImHashMap<K, V>(new Data(hash, key, value),
-                            NewNode(_data, Conflicts), NewNode(Right._data, Right.Conflicts), 2);
-
-                    // single rotation:
-                    //    5     =>    6
-                    //      6      5     8
-                    //       8
-                    return NewNode(Right._data, Right.Conflicts,
-                        NewNode(_data, Conflicts), new ImHashMap<K, V>(new Data(hash, key, value)), 2);
+                    var updatedRight = ReferenceEquals(Right.Key, key) || Right.Key.Equals(key)
+                        ? Right.UpdatedOrOld(hash, key, value, ref isUpdated, ref oldValue, update)
+                        : Right.UpdateValueAndResolveConflicts(key, value, ref isUpdated, ref oldValue, update, false);
+                    return updatedRight == Right ? this : NewNode(_data, Conflicts, Left, updatedRight);
                 }
 
-                var right = Right.AddOrUpdate(hash, key, value, ref isUpdated, ref oldValue, update);
-                if (right == Right)
-                    return this;
+                var right = Right;
+                if (right.Height == 1)
+                {
+                    if (Left.Height == 0)
+                    {
+                        // double rotation:
+                        //    5     =>   5     =>     6
+                        //       8          6      5     8
+                        //      6            8
+                        if (hash < right.Hash)
+                            return new ImHashMap<K, V>(new Data(hash, key, value),
+                                NewNode(_data, Conflicts), NewNode(right._data, right.Conflicts), 2);
+
+                        // single rotation:
+                        //    5     =>    6
+                        //      6      5     8
+                        //       8
+                        return NewNode(right._data, right.Conflicts,
+                            NewNode(_data, Conflicts), new ImHashMap<K, V>(new Data(hash, key, value)), 2);
+                    }
+                    else
+                    {
+                        if (hash < right.Hash)
+                            right = NewNode(right._data, right.Conflicts,
+                                new ImHashMap<K, V>(new Data(hash, key, value)), Empty, 2);
+                        else 
+                            right = NewNode(right._data, right.Conflicts,
+                                Empty, new ImHashMap<K, V>(new Data(hash, key, value)), 2);
+                    }
+                }
+                else
+                {
+                    var oldRight = right;
+                    right = right.AddOrUpdate(hash, key, value, ref isUpdated, ref oldValue, update);
+                    if (oldRight == right)
+                        return this;
+                }
 
                 if (right.Height > Left.Height + 1)
                 {
