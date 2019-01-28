@@ -222,6 +222,27 @@ Frequency=2156249 Hz, Resolution=463.7683 ns, Timer=TSC
  AddOrUpdate_v1 |  1000 | 308,355.6 ns | 2,046.461 ns | 1,914.261 ns |  1.06 |    120.6055 |      3.4180 |           - |            569760 B |
  AddOrUpdate_v3 |  1000 | 375,880.3 ns | 1,710.716 ns | 1,600.205 ns |  1.29 |    118.6523 |      0.4883 |           - |            560440 B |
 
+# Inlining the _data with degradation:
+
+         Method | Count |         Mean |         Error |        StdDev | Ratio | Gen 0/1k Op | Gen 1/1k Op | Gen 2/1k Op | Allocated Memory/Op |
+--------------- |------ |-------------:|--------------:|--------------:|------:|------------:|------------:|------------:|--------------------:|
+ AddOrUpdate_v2 |     5 |     403.6 ns |     0.9660 ns |     0.8563 ns |  0.86 |      0.2170 |           - |           - |                1 KB |
+    AddOrUpdate |     5 |     471.8 ns |     1.8628 ns |     1.6513 ns |  1.00 |      0.2403 |           - |           - |             1.11 KB |
+ AddOrUpdate_v1 |     5 |     478.1 ns |     2.0461 ns |     1.9139 ns |  1.01 |      0.2737 |           - |           - |             1.27 KB |
+                |       |              |               |               |       |             |             |             |                     |
+ AddOrUpdate_v1 |    40 |   4,660.4 ns |    23.7074 ns |    22.1759 ns |  0.93 |      2.9678 |           - |           - |            13.69 KB |
+ AddOrUpdate_v2 |    40 |   4,954.1 ns |    12.1222 ns |    10.1226 ns |  0.99 |      2.8458 |           - |           - |            13.14 KB |
+    AddOrUpdate |    40 |   4,990.8 ns |    19.1020 ns |    17.8681 ns |  1.00 |      3.0136 |           - |           - |            13.92 KB |
+                |       |              |               |               |       |             |             |             |                     |
+ AddOrUpdate_v1 |   200 |  34,492.0 ns |   110.3116 ns |    97.7883 ns |  0.96 |     18.7378 |      0.0610 |           - |            86.53 KB |
+    AddOrUpdate |   200 |  35,963.5 ns |   150.7090 ns |   125.8489 ns |  1.00 |     20.1416 |           - |           - |            92.86 KB |
+ AddOrUpdate_v2 |   200 |  36,358.0 ns |   113.1547 ns |   105.8450 ns |  1.01 |     19.2261 |           - |           - |            88.88 KB |
+                |       |              |               |               |       |             |             |             |                     |
+    AddOrUpdate |  1000 | 277,847.4 ns | 1,587.0654 ns | 1,484.5420 ns |  1.00 |    135.2539 |      0.4883 |           - |           624.61 KB |
+ AddOrUpdate_v2 |  1000 | 297,305.3 ns | 2,088.6003 ns | 1,851.4898 ns |  1.07 |    130.8594 |      0.9766 |           - |           604.55 KB |
+ AddOrUpdate_v1 |  1000 | 299,857.3 ns |   366.4522 ns |   342.7796 ns |  1.08 |    120.6055 |      3.4180 |           - |           556.41 KB |
+
+
 */
 
             [Params(5, 40, 200, 1000)]
@@ -389,6 +410,20 @@ Frequency=2156249 Hz, Resolution=463.7683 ns, Timer=TSC
                       |       |           |           |           |       |             |             |             |                     |
     GetValueOrDefault |   200 | 11.637 ns | 0.0721 ns | 0.0602 ns |  1.00 |           - |           - |           - |                   - |
  GetValueOrDefault_v1 |   200 | 12.042 ns | 0.0607 ns | 0.0568 ns |  1.03 |           - |           - |           - |                   - |
+
+
+## Inlining the _data with performance degradation
+
+               Method | Count |      Mean |     Error |    StdDev | Ratio | Gen 0/1k Op | Gen 1/1k Op | Gen 2/1k Op | Allocated Memory/Op |
+--------------------- |------ |----------:|----------:|----------:|------:|------------:|------------:|------------:|--------------------:|
+ GetValueOrDefault_v1 |     5 |  5.564 ns | 0.0420 ns | 0.0393 ns |  0.91 |           - |           - |           - |                   - |
+    GetValueOrDefault |     5 |  6.136 ns | 0.0695 ns | 0.0580 ns |  1.00 |           - |           - |           - |                   - |
+                      |       |           |           |           |       |             |             |             |                     |
+ GetValueOrDefault_v1 |    40 |  9.342 ns | 0.0160 ns | 0.0142 ns |  0.93 |           - |           - |           - |                   - |
+    GetValueOrDefault |    40 | 10.089 ns | 0.0091 ns | 0.0085 ns |  1.00 |           - |           - |           - |                   - |
+                      |       |           |           |           |       |             |             |             |                     |
+ GetValueOrDefault_v1 |   200 | 11.459 ns | 0.0123 ns | 0.0109 ns |  0.99 |           - |           - |           - |                   - |
+    GetValueOrDefault |   200 | 11.532 ns | 0.0394 ns | 0.0368 ns |  1.00 |           - |           - |           - |                   - |
 
 */
             [Params(5, 40, 200)]// the 1000 does not add anything as the LookupKey stored higher in the tree, 1000)]
