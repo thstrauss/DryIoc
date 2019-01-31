@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace DryIoc.MefAttributedModel.UnitTests
 {
@@ -108,18 +108,11 @@ namespace DryIoc.MefAttributedModel.UnitTests
         [Test]
         public void Container_can_be_setup_to_select_one_constructor_based_on_attribute()
         {
-            var service = _container.Resolve<ServiceWithMultipleConstructorsAndOneImporting>();
+            var service = _container.Resolve<ServiceWithMultipleCostructorsAndOneImporting>();
 
             Assert.That(service.Transient, Is.Not.Null);
             Assert.That(service.Singleton, Is.Null);
 
-        }
-
-        [Test]
-        public void Internal_constructor_used()
-        {
-            var service = _container.Resolve<ServiceWithInternalImportingConstructor>();
-            Assert.IsInstanceOf<ServiceWithInternalImportingConstructor>(service);
         }
 
         [Test]
@@ -133,7 +126,7 @@ namespace DryIoc.MefAttributedModel.UnitTests
         public void Resolving_service_with_multiple_constructors_without_importing_attribute_should_fail()
         {
             var ex = Assert.Throws<AttributedModelException>(
-                () => _container.Resolve<ServiceWithMultipleConstructors>());
+                () => _container.Resolve<ServiceWithMultipleCostructors>());
             Assert.AreEqual(ex.Error, Error.NoSingleCtorWithImportingAttr);
         }
 
